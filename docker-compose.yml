@@ -1,0 +1,92 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       qayem_hr
+      POSTGRES_USER:     qayem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U qayem -d qayem_hr"]
+      interval: 5s
+      timeout:  5s
+      retries:  20
+
+  # ── Ollama (local LLM runtime for AI features) ───────────────────────────────
+  ollama:
+    profiles: [ai]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test:     ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout:  5s
+      retries:  20
+
+  # One-shot job: pulls the model on first run, then exits. Backend does NOT
+  # block on this — AI features simply degrade gracefully until the pull
+  # finishes (first run only; the model is cached in the ollama_data volume).
+  ollama-init:
+    profiles: [ai]
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    entrypoint: ["/bin/sh", "-c", "ollama pull llama3.2"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # ── Backend (Java / Spring Boot) ─────────────────────────────────────────────
+  backend:
+    build:
+      context:    ./backend-java
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_NAME: "qayem_hr"
+      DB_USER: "qayem"
+      DB_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-}"
+      JWT_ISSUER:               "Qayem.HRSystem"
+      JWT_AUDIENCE:             "Qayem.HRSystem.Client"
+      JWT_ACCESS_EXPIRY_MINUTES: "60"
+      JWT_REFRESH_EXPIRY_DAYS:   "7"
+      AllowedOrigins:            "${ALLOWED_ORIGINS:-http://localhost:8080}"
+      # Local file storage — CVs stored on disk
+      FILE_UPLOADS_PATH:  "/app/uploads"
+      # AI (CV extraction + evaluation/candidate summaries) — see backend-java/src/main/java/com/qayem/hr/ai
+      AI_ENABLED:      "${AI_ENABLED:-false}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_MODEL:    "llama3.2"
+      AI_TIMEOUT_SECONDS: "180"
+    volumes:
+      - cv_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Frontend (nginx) ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context:    .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  cv_uploads:
+  ollama_data:

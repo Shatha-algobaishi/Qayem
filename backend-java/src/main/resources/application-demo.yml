@@ -1,0 +1,19 @@
+# A separate, disposable database. Never points at a production datasource.
+spring:
+  datasource:
+    url: jdbc:h2:mem:qayem_demo;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=KEY,VALUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+app:
+  demo: true
+  demo-password: ${DEMO_PASSWORD:}
+  bootstrap-admin-password: ""
+  allowed-origins: http://localhost:5200,http://127.0.0.1:5200
+jwt:
+  secret: ${random.uuid}${random.uuid}
+ai:
+  enabled: false

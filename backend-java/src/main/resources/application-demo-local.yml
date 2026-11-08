@@ -1,0 +1,5 @@
+# Local workflow rehearsal only, with the same disposable fictional dataset.
+server:
+  address: 127.0.0.1
+app:
+  demo-write-enabled: true

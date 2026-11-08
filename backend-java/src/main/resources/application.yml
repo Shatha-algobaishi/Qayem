@@ -1,0 +1,55 @@
+server:
+  port: 5020
+
+spring:
+  profiles:
+    group:
+      demo-local: demo
+  application:
+    name: qayem
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:qayem_hr}
+    username: ${DB_USER:qayem}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        default_schema: public
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: ${JWT_ISSUER:Qayem.HRSystem}
+  audience: ${JWT_AUDIENCE:Qayem.HRSystem.Client}
+  access-expiry-minutes: ${JWT_ACCESS_EXPIRY_MINUTES:60}
+  refresh-expiry-days: ${JWT_REFRESH_EXPIRY_DAYS:7}
+
+app:
+  demo: false
+  bootstrap-admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  allowed-origins: ${AllowedOrigins:http://localhost}
+  uploads-path: ${FILE_UPLOADS_PATH:/app/uploads}
+
+ai:
+  enabled: ${AI_ENABLED:true}
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:llama3.2}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:180}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

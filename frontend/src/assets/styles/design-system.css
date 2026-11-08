@@ -1,0 +1,156 @@
+/*
+ * Qayem — Candidate Evaluation Platform — Design System
+ * قيّم
+ */
+
+/* ── Font imports ──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /*
+   * Brand Palette — Qayem (قيّم)
+   * ─────────────────────────────────────────────────────────────
+   * Primary green  : #7c3654  — أزرار، روابط، عناصر تفاعلية
+   * Dark green     : #3b2030  — الشريط الجانبي، الفوتر
+   * Text primary   : #161616  — نص أساسي
+   * Text secondary : #384250  — نص ثانوي
+   * Light bg       : #F3F4F6  — خلفية الصفحات
+   * White          : #FFFFFF
+   * ─────────────────────────────────────────────────────────────
+   */
+
+  /* ── Primary Brand ── */
+  --color-primary-dark:   #3b2030;   /* Qayem Dark Green — sidebar, darkest chrome   */
+  --color-primary:        #7c3654;   /* Qayem Primary Green — buttons, CTA           */
+  --color-accent:         #7c3654;   /* Qayem Green — hover, progress, highlights    */
+
+  /* ── Extended Brand Scale ── */
+  --color-navy:           #3b2030;
+  --color-navy-mid:       #62334a;
+  --color-blue:           #7c3654;
+  --color-sky:            #9c526b;
+  --color-steel:          #a97086;
+  --color-cyan:           #c38a58;
+  --color-gray-blue:      #9CA3AF;
+  --color-pale-blue:      #f0e8ee;
+
+  /* ── Legacy aliases ── */
+  --color-teal:           #7c3654;
+  --color-light-blue:     #a97086;
+  --color-orange:         #D97706;
+  --color-brown:          #DC2626;
+
+  /* ── Neutrals ── */
+  --color-neutral-900:    #3b2030;
+  --color-neutral-800:    #62334a;
+  --color-neutral-700:    #7c3654;
+  --color-neutral-600:    #a97086;
+  --color-neutral-500:    #6B7280;
+  --color-neutral-400:    #9CA3AF;
+  --color-neutral-300:    #D1D5DB;
+  --color-neutral-200:    #E5E7EB;
+  --color-neutral-100:    #F3F4F6;
+  --color-neutral-50:     #F9FAFB;
+
+  /* ── Semantic Colors ── */
+  --color-success:        #16A34A;
+  --color-success-light:  #F0FDF4;
+  --color-warning:        #D97706;
+  --color-warning-light:  #FFFBEB;
+  --color-danger:         #DC2626;
+  --color-danger-light:   #FEF2F2;
+  --color-info:           #7c3654;
+  --color-info-light:     #F0FDF4;
+
+  /* ── Decision Colors ── */
+  --color-recommended:        #16A34A;
+  --color-recommended-bg:     #F0FDF4;
+  --color-conditional:        #D97706;
+  --color-conditional-bg:     #FFFBEB;
+  --color-not-qualified:      #DC2626;
+  --color-not-qualified-bg:   #FEF2F2;
+  --color-employed:           #7C3AED;
+  --color-employed-bg:        #F5F3FF;
+
+  /* ── Surfaces ── */
+  --color-bg:             #F3F4F6;
+  --color-bg-white:       #FFFFFF;
+  --color-sidebar:        #3b2030;
+  --color-sidebar-hover:  #321c28;
+  --color-sidebar-active: #281721;
+  --color-header:         #FFFFFF;
+  --color-border:         #E5E7EB;
+  --color-border-strong:  #9CA3AF;
+
+  /* ── Text ── */
+  --color-text-primary:   #161616;
+  --color-text-secondary: #384250;
+  --color-text-muted:     #59616C;
+  --color-text-inverse:   #FFFFFF;
+  --color-text-link:      #7c3654;
+
+  /* ── Typography ── */
+  --font-arabic:          'IBM Plex Sans Arabic', 'Segoe UI', sans-serif;
+  --font-latin:           'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --text-xs:    0.75rem;
+  --text-sm:    0.875rem;
+  --text-base:  1rem;
+  --text-lg:    1.125rem;
+  --text-xl:    1.25rem;
+  --text-2xl:   1.5rem;
+  --text-3xl:   1.875rem;
+  --text-4xl:   2.25rem;
+
+  --font-thin:        100;
+  --font-extralight:  200;
+  --font-light:       300;
+  --font-regular:     400;
+  --font-medium:      500;
+  --font-semibold:    600;
+  --font-bold:        700;
+
+  /* ── Spacing (8-pt grid) ── */
+  --space-1:    0.25rem;
+  --space-2:    0.5rem;
+  --space-3:    0.75rem;
+  --space-4:    1rem;
+  --space-5:    1.25rem;
+  --space-6:    1.5rem;
+  --space-8:    2rem;
+  --space-10:   2.5rem;
+  --space-12:   3rem;
+  --space-16:   4rem;
+
+  /* ── Layout ── */
+  --sidebar-width:           280px;
+  --sidebar-collapsed-width: 72px;
+  --header-height:           64px;
+  --content-max-width:       1400px;
+
+  /* ── Radius ── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* ── Transitions ── */
+  --transition-fast:   150ms ease;
+  --transition-base:   200ms ease;
+  --transition-slow:   300ms ease;
+
+  /* ── Z-index ── */
+  --z-sidebar:  100;
+  --z-header:   90;
+  --z-modal:    200;
+  --z-toast:    300;
+  --z-tooltip:  400;
+}
