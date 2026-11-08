@@ -8,7 +8,7 @@ export default function DemoGuidePage() {
     <p>{t('جميع الأسماء والدرجات والقرارات هنا أمثلة وهمية، وليست تقييمات لأشخاص حقيقيين.', 'Every name, score and decision here is fictional and does not describe a real person.')}</p>
     <h2>{t('أمثلة جاهزة للاستعراض', 'Ready-to-explore examples')}</h2>
     <ul>
-      <li>{t('4 جلسات و12 مرشحًا و3 مقيّمين، مع بيانات عربية وإنجليزية.', '4 sessions, 12 candidates and 3 evaluators, with Arabic and English examples.')}</li>
+      <li>{t('مرشحون من ستة أقسام ومقيّمون متنوعون، مع ملفات وجلسات وتقييمات عربية وإنجليزية.', 'Candidates across six departments and a diverse panel, with Arabic and English profiles, sessions and evaluations.')}</li>
       <li>{t('درجات منخفضة ومتوسطة ومرتفعة، مع نتائج متقاربة وأخرى تحتاج مراجعة التباين.', 'Low, medium and high scores, with agreement and discrepancy scenarios.')}</li>
       <li>{t('مسودات وتقييمات بانتظار الإنجاز، وقرارات تشمل التوصية والتأهيل المشروط وعدم التأهيل والتوظيف.', 'Draft and pending evaluations, plus recommended, conditional, not-qualified and employed decisions.')}</li>
     </ul>

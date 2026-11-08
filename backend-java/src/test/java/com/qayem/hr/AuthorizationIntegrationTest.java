@@ -32,6 +32,10 @@ class AuthorizationIntegrationTest extends DemoTestConfiguration {
     @Autowired PasswordEncoder encoder;
     @Autowired jakarta.persistence.EntityManager entityManager;
 
+    @Test void operationalModeDoesNotOfferVisitorAccess() throws Exception {
+        mvc.perform(post("/api/v1/auth/demo-login")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/auth/demo-info")).andExpect(jsonPath("$.enabled").value(false));
+    }
     private User account(String role) {
         var r = roles.findByName(role).orElseThrow();
         var user = users.saveAndFlush(User.create("Test", "Test", role + "@example.invalid", role.toLowerCase(),

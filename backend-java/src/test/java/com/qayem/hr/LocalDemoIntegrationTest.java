@@ -29,6 +29,7 @@ class LocalDemoIntegrationTest extends DemoTestConfiguration {
         return json.readTree(response).get("accessToken").asText();
     }
     @Test void localPracticeAllowsWorkflowButBlocksAccountAdministration() throws Exception {
+        mvc.perform(post("/api/v1/auth/demo-login")).andExpect(status().isNotFound());
         var token=login();
         var candidate=candidates.findAll().stream().filter(c->c.getNationalId().equals("DEMO-C006")).findFirst().orElseThrow();
         mvc.perform(post("/api/v1/evaluations/start").header("Authorization","Bearer "+token)

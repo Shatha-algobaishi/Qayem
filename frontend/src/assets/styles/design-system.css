@@ -21,9 +21,9 @@
    */
 
   /* ── Primary Brand ── */
-  --color-primary-dark:   #3b2030;   /* Qayem Dark Green — sidebar, darkest chrome   */
-  --color-primary:        #7c3654;   /* Qayem Primary Green — buttons, CTA           */
-  --color-accent:         #7c3654;   /* Qayem Green — hover, progress, highlights    */
+  --color-primary-dark:   #3b2030;   /* Qayem ink — sidebar, darkest chrome   */
+  --color-primary:        #7c3654;   /* Qayem wine — buttons, CTA           */
+  --color-accent:         #7c3654;   /* Qayem wine — hover, progress, highlights    */
 
   /* ── Extended Brand Scale ── */
   --color-navy:           #3b2030;

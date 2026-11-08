@@ -1,5 +1,7 @@
-# Qayem release
+# Qayem expanded demo release
 
-Independent source copy with a new Git history, a wine/ink/bronze visual identity, bilingual product naming and disposable fictional data. Original projects are outside the release and must remain unchanged.
+Refined Q identity with properly shaped Arabic/English SVG wordmarks, public passwordless read-only visitor entry, six departmental sessions, thirty natural fictional candidate names and eight evaluators. Ninety assignments link sixty-three submitted/reviewed evaluations, six drafts and twenty-one unstarted evaluations; thirteen final decisions and four discrepancy cases support real reports and comparisons.
 
-See DEMO.md for the reproducible fixture and local practice mode; VERIFICATION.md records checks actually executed. Uploaded CVs, local passwords, original Git history, authenticated traces and build/dependency directories are excluded.
+Forty-one Java tests and frontend type/lint/build checks pass. Browser checks cover direct entry, error recovery, roles, profiles, filters, charts, missing scores, reports, CSV/Excel and mobile layouts. See VERIFICATION.md for exact evidence and limits, BRAND.md for identity exploration, and DEMO.md for Windows setup and local practice.
+
+The original projects and their Git repositories remain unchanged. Source publication excludes local passwords, uploaded CVs, dependency/build folders and raw authenticated artifacts.

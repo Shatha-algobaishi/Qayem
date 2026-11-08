@@ -1,3 +1,4 @@
+import BrandLoader from '../../../shared/components/ui/BrandLoader';
 import { csvCell } from '../../../shared/utils/safeOutput';
 import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../../app/store';
@@ -30,6 +31,7 @@ const colsByTab: Record<TabKey, { key: string; ar: string; en: string }[]> = {
   candidates: [
     { key: 'nationalId',      ar: 'رقم الهوية',    en: 'National ID'     },
     { key: 'fullNameAr',      ar: 'الاسم',          en: 'Name'            },
+    { key: 'department', ar: 'القسم', en: 'Department' },
     { key: 'sessionCode',     ar: 'الجلسة',         en: 'Session'         },
     { key: 'candidateStatus', ar: 'الحالة',         en: 'Status'          },
     { key: 'aggregateScore',  ar: 'متوسط الدرجات', en: 'Avg Score'       },
@@ -70,6 +72,8 @@ const colsByTab: Record<TabKey, { key: string; ar: string; en: string }[]> = {
 
 const SCORE_KEYS    = new Set(['aggregateScore','averageScore','highestScore','lowestScore','minScore','maxScore']);
 const DECISION_KEYS = new Set(['finalDecision','systemDecision']);
+
+const columnsFor = (tab: TabKey, ar: boolean) => colsByTab[tab].map(col => !ar && col.key==='fullNameAr' ? {...col,key:'fullNameEn'} : col);
 
 const sysDecisions = [
   { value: 'Recommended',            ar: 'يُوصى به', en: 'Recommended'   },
@@ -248,7 +252,7 @@ export default function ReportsPage() {
 
   // ── Export helpers ───────────────────────────────────────────
   const buildExportRows = () => {
-    const cols = colsByTab[activeTab];
+    const cols = columnsFor(activeTab,isAr);
     return displayedData.map(row => {
       const obj: Record<string, string> = {};
       for (const col of cols) obj[isAr ? col.ar : col.en] = formatCellValue(col.key, row[col.key], isAr);
@@ -257,7 +261,7 @@ export default function ReportsPage() {
   };
 
   const handleExportCsv = () => {
-    const cols = colsByTab[activeTab];
+    const cols = columnsFor(activeTab,isAr);
     const header = cols.map(c => csvCell(isAr ? c.ar : c.en)).join(',');
     const body = displayedData.map(row =>
       cols.map(c => csvCell(formatCellValue(c.key, row[c.key], isAr))).join(',')
@@ -277,6 +281,7 @@ export default function ReportsPage() {
     const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
+    wb.Props={Title:'Qayem evaluation report',Author:'Qayem'};
     XLSX.utils.book_append_sheet(wb, ws, TABS.find(t => t.key === activeTab)?.[isAr ? 'ar' : 'en'] ?? activeTab);
     XLSX.writeFile(wb, `${activeTab}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
@@ -316,7 +321,7 @@ export default function ReportsPage() {
     return String(val);
   };
 
-  const cols = colsByTab[activeTab];
+  const cols = columnsFor(activeTab,isAr);
   const hasAdvancedFilter = !!(filterSysDec || filterFinalDec || filterAppType || filterMinScore || filterMaxScore);
   const advancedCount = [filterSysDec, filterFinalDec, filterAppType, filterMinScore, filterMaxScore].filter(Boolean).length;
 
@@ -325,6 +330,7 @@ export default function ReportsPage() {
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
         <div>
+          <img className="report-brand" src={isAr?'/qayem-logo-ar.svg':'/qayem-logo-en.svg'} alt={isAr?'قيّم':'Qayem'}/>
           <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-light)', color: 'var(--color-text-primary)' }}>
             {label('التقارير', 'Reports')}
           </h2>
@@ -466,7 +472,7 @@ export default function ReportsPage() {
       <div style={cardStyle}>
         {loading ? (
           <div style={{ padding:'var(--space-16)', textAlign:'center', color:'var(--color-text-muted)' }}>
-            {label('جارٍ التحميل...', 'Loading...')}
+            <BrandLoader />
           </div>
         ) : (
           <div style={{ overflowX:'auto' }}>

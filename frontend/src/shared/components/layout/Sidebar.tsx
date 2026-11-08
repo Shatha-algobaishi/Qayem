@@ -79,9 +79,9 @@ export default function Sidebar() {
           <img src="/favicon.svg" width="36" height="36" alt="Qayem" />
         ) : (
           <img
-            src="/qayem-logo-white.svg"
-            alt="قيّم"
-            style={{ height: 36, width: 'auto', maxWidth: 190 }}
+            src={isAr ? "/qayem-logo-ar-white.svg" : "/qayem-logo-en-white.svg"}
+            alt={isAr ? "قيّم" : "Qayem"}
+            style={{ height: 44, width: 'auto', maxWidth: 190 }}
           />
         )}
         <button

@@ -205,6 +205,7 @@ tr:nth-child(even) td{background:#f8fafc}
 <div class="hdr">
   <div>
     <div class="hdr-title">${isAr ? 'نموذج تقييم مرشح' : 'Candidate Evaluation Form'}</div>
+    <img src="${window.location.origin}/qayem-logo-${isAr ? 'ar' : 'en'}.svg" alt="Qayem" style="width:150px;height:44px"/>
     <div class="hdr-sub">${isAr ? 'قيّم' : 'Qayem'}</div>
   </div>
   <div class="hdr-meta">

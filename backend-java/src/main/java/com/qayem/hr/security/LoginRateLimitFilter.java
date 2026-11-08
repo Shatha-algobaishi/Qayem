@@ -16,7 +16,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        if (!"POST".equals(request.getMethod()) || !"/api/v1/auth/login".equals(request.getRequestURI())) {
+        if (!"POST".equals(request.getMethod()) || !java.util.List.of("/api/v1/auth/login", "/api/v1/auth/demo-login").contains(request.getRequestURI())) {
             chain.doFilter(request, response); return;
         }
         long now = System.currentTimeMillis();

@@ -10,14 +10,12 @@ def call(path, token=None, body=None):
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = "Bearer " + token
-    request = urllib.request.Request(base + path, data=json.dumps(body).encode() if body else None, headers=headers)
+    request = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None, headers=headers)
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.load(response)
 
 password = os.environ.get("DEMO_PASSWORD")
-if not password:
-    raise SystemExit("Set DEMO_PASSWORD to match your local demo server.")
-login = call("/auth/login", body={"username": "demo", "password": password})
+login = call("/auth/login", body={"username":"demo","password":password}) if password else call("/auth/demo-login",body={})
 if not login["user"].get("isDemo"):
     raise SystemExit("Refusing to test a non-demo environment.")
 token = login["accessToken"]

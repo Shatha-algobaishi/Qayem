@@ -62,7 +62,8 @@ public class ManagerController {
             Map<String, Object> em = new LinkedHashMap<>();
             em.put("id", c.getId()); em.put("fullNameAr", c.getFullNameAr()); em.put("fullNameEn", c.getFullNameEn());
             em.put("aggregateScore", liveAvg); em.put("finalDecision", c.getFinalDecision());
-            em.put("liveDecision", liveDecision); em.put("hasSession", c.getSessionId() != null);
+            em.put("liveDecision", liveDecision);
+            em.put("effectiveDecision", c.getFinalDecision()!=null?c.getFinalDecision():liveDecision); em.put("hasSession", c.getSessionId() != null);
             em.put("jobPositionAr", c.getSession() != null ? c.getSession().getJobPositionAr() : null);
             return em;
         }).collect(Collectors.toList());
@@ -98,9 +99,9 @@ public class ManagerController {
         dashboard.put("totalCandidates", enriched.stream().filter(c -> (boolean) c.get("hasSession")).count());
         dashboard.put("totalApplicants", enriched.stream().filter(c -> !(boolean) c.get("hasSession")).count());
         dashboard.put("employedCount",   enriched.stream().filter(c -> EvaluationDecision.Employed.equals(c.get("finalDecision"))).count());
-        dashboard.put("recommendedCount", enriched.stream().filter(c -> EvaluationDecision.Recommended.equals(c.get("liveDecision")) && !EvaluationDecision.Employed.equals(c.get("finalDecision"))).count());
-        dashboard.put("conditionalCount", enriched.stream().filter(c -> EvaluationDecision.ConditionallyQualified.equals(c.get("liveDecision")) && !EvaluationDecision.Employed.equals(c.get("finalDecision"))).count());
-        dashboard.put("notQualifiedCount", enriched.stream().filter(c -> EvaluationDecision.NotQualified.equals(c.get("liveDecision")) && !EvaluationDecision.Employed.equals(c.get("finalDecision"))).count());
+        dashboard.put("recommendedCount", enriched.stream().filter(c -> EvaluationDecision.Recommended.equals(c.get("effectiveDecision"))).count());
+        dashboard.put("conditionalCount", enriched.stream().filter(c -> EvaluationDecision.ConditionallyQualified.equals(c.get("effectiveDecision"))).count());
+        dashboard.put("notQualifiedCount", enriched.stream().filter(c -> EvaluationDecision.NotQualified.equals(c.get("effectiveDecision"))).count());
         dashboard.put("recentSessions", recentSessions);
         dashboard.put("topCandidates", topCandidates);
         dashboard.put("bottomCandidates", bottomCandidates);
@@ -144,19 +145,20 @@ public class ManagerController {
 
         List<Map<String, Object>> rankings = candidates.stream().map(c -> {
             var submitted = c.getEvaluations().stream()
-                    .filter(e -> e.getStatus() != EvaluationStatus.Draft).collect(Collectors.toList());
+                    .filter(e -> e.getStatus() != EvaluationStatus.Draft && e.getTotalScore() != null).collect(Collectors.toList());
             BigDecimal avg  = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).average().orElse(0));
             BigDecimal high = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).max().orElse(0));
             BigDecimal low  = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).min().orElse(0));
             BigDecimal var_ = (high != null && low != null) ? high.subtract(low) : null;
             boolean hasDis  = var_ != null && var_.compareTo(discT) > 0;
 
-            List<Map<String, Object>> evalScores = evalIds.stream().map(eid -> {
+            List<Map<String, Object>> evalScores = ceRepo.findByCandidateId(c.getId()).stream().map(CandidateEvaluator::getUserId).map(eid -> {
                 Evaluation ev = submitted.stream().filter(e -> eid.equals(e.getEvaluatorId())).findFirst().orElse(null);
                 User evaluator = userRepo.findById(eid).orElse(null);
                 Map<String, Object> score = new LinkedHashMap<>();
                 score.put("evaluatorId", eid);
                 score.put("evaluatorNameAr", evaluator != null ? evaluator.getFullNameAr() : "—");
+                score.put("evaluatorNameEn", evaluator != null ? evaluator.getFullNameEn() : "—");
                 score.put("score", ev != null ? ev.getTotalScore() : null);
                 return score;
             }).collect(Collectors.toList());
@@ -296,7 +298,7 @@ public class ManagerController {
 
     private Map<String, Object> buildCandidateSummary(Candidate c, BigDecimal discT) {
         var submitted = c.getEvaluations().stream()
-                .filter(e -> e.getStatus() != EvaluationStatus.Draft).collect(Collectors.toList());
+                .filter(e -> e.getStatus() != EvaluationStatus.Draft && e.getTotalScore() != null).collect(Collectors.toList());
         BigDecimal avg  = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).average().orElse(0));
         BigDecimal high = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).max().orElse(0));
         BigDecimal low  = submitted.isEmpty() ? null : BigDecimal.valueOf(submitted.stream().mapToInt(e -> e.getTotalScore() != null ? e.getTotalScore() : 0).min().orElse(0));

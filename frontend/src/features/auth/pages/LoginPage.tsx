@@ -63,18 +63,19 @@ export default function LoginPage() {
             </div>
             {error && <p id="login-error" className="form-error" role="alert">{label('تعذر تسجيل الدخول. تحقق من بياناتك واتصالك ثم حاول مجددًا.', error)}</p>}
             <button className="primary-action" type="submit" disabled={isLoading || !username.trim() || !password}>
-              {isLoading ? label('جارٍ تسجيل الدخول…', 'Signing in?') : label('دخول إلى مساحة العمل', 'Enter workspace')}
+              {isLoading ? label('جارٍ تسجيل الدخول…', 'Signing in…') : label('دخول إلى مساحة العمل', 'Enter workspace')}
             </button>
           </form>
           <div className="access-note">
             <h3>{label('تحتاج إلى حساب؟', 'Need an account?')}</h3>
             <p>{label('إنشاء الحسابات وتحديد الأدوار من اختصاص مدير النظام. تواصل معه للحصول على صلاحية الدخول.', 'Accounts and roles are assigned by your system administrator. Contact them to request access.')}</p>
           </div>
+          {error && demo && <p className="form-error" role="alert">{label('تعذر فتح الجلسة. تحقق من اتصال الخادم وأعد المحاولة.', 'Could not open the session. Check the server connection and try again.')}</p>}
           {demo && <aside className="demo-access" aria-label={label('الدخول التجريبي', 'Demo access')}>
             <strong>{label('استكشف المنصة', 'Explore the platform')}</strong>
-            <p>{label('حساب للقراءة فقط ببيانات افتراضية وأربعة أدوار. استخدم كلمة المرور التي حددها مشغّل هذه النسخة.', 'Read-only access with fictional data and four roles. Use the demo password configured by the person running this instance.')}</p>
-            <button type="button" onClick={() => { setUsername('demo'); dispatch(clearError()); }}>
-              {label('استخدام اسم المستخدم التجريبي', 'Use demo username')}
+            <p>{label('جرّب الأدوار الأربعة ببيانات وهمية. الدخول مباشر دون كلمة مرور، والتعديل غير متاح.', 'Explore four roles with fictional data. No password needed. Changes are disabled.')}</p>
+            <button className="demo-login-action" type="button" disabled={isLoading} aria-busy={isLoading} onClick={() => { dispatch(clearError()); dispatch(login(undefined)); }}>
+              {isLoading ? label('جارٍ فتح الديمو…', 'Opening demo…') : label('دخول تجريبي', 'Try the demo')}
             </button>
           </aside>}
         </div>

@@ -29,9 +29,10 @@ granting a reuse license. This is not an official government service.
 - Evaluation answers reject unknown/inactive/duplicate questions, oversized notes,
   and scores outside configured bounds. Save and submission are transactional;
   active questions must all be answered. AI work is scheduled after commit.
-- Demo passwords are supplied through local environment configuration; test
+- Optional manual demo passwords are supplied through local environment configuration; test
   passwords and signing keys are generated at runtime. No reusable passwords are
   included in source or documentation.
+- Visitor access uses a passwordless demo-login endpoint only when read-only demo is enabled. It is unavailable in operational and local-practice modes; it returns the standard scoped session and never a server password. The demo isolation guard refuses persistent datasources. Login throttling includes visitor access.
 - A separate H2 demo database contains only fictional data; data-changing requests are blocked server-side in read-only demo mode, except authentication lifecycle. An explicit demo-local profile permits workflow writes on loopback only; account administration remains blocked.
 - Printable user text is HTML-escaped and signatures accept PNG data only.
   CSV fields are quoted and spreadsheet formula prefixes neutralized.

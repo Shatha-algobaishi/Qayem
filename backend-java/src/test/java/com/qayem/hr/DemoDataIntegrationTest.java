@@ -39,7 +39,7 @@ class DemoDataIntegrationTest extends DemoTestConfiguration {
         token=json.readTree(response).get("accessToken").asText();
     }
     private JsonNode get(String path) throws Exception {
-        return json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path)
+        return json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(java.net.URI.create(path))
                 .header("Authorization","Bearer "+token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
     }
     private UUID session(String code) {
@@ -50,14 +50,43 @@ class DemoDataIntegrationTest extends DemoTestConfiguration {
         throw new AssertionError("Missing candidate "+nationalId);
     }
     @Test void fixtureContainsRealLinkedScenarioDiversity() {
-        assertEquals(4,sessions.count()); assertEquals(12,candidates.count()); assertEquals(3,users.count());
-        assertEquals(36,assignments.count()); assertEquals(27,evaluations.count());
-        assertEquals(2,evaluations.findAll().stream().filter(e->e.getStatus()==EvaluationStatus.Draft).count());
-        assertEquals(8,candidates.findAll().stream().filter(c->c.getCandidateStatus()==CandidateStatus.Completed).count());
-        assertEquals(2,candidates.findAll().stream().filter(c->c.getCandidateStatus()==CandidateStatus.Pending).count());
-        assertEquals(2,candidates.findAll().stream().filter(Candidate::isHasDiscrepancy).count());
+        assertEquals(6,sessions.count()); assertEquals(30,candidates.count()); assertEquals(8,users.count());
+        assertEquals(90,assignments.count()); assertEquals(69,evaluations.count());
+        assertEquals(6,evaluations.findAll().stream().filter(e->e.getStatus()==EvaluationStatus.Draft).count());
+        assertEquals(20,candidates.findAll().stream().filter(c->c.getCandidateStatus()==CandidateStatus.Completed).count());
+        assertEquals(4,candidates.findAll().stream().filter(c->c.getCandidateStatus()==CandidateStatus.Pending).count());
+        assertEquals(4,candidates.findAll().stream().filter(Candidate::isHasDiscrepancy).count());
         assertEquals(4,candidates.findAll().stream().filter(c->c.getOverriddenBy()!=null).count());
         assertEquals(4,candidates.findAll().stream().map(Candidate::getFinalDecision).filter(Objects::nonNull).distinct().count());
+    }
+    @Autowired com.qayem.hr.seeder.DemoSeeder seeder;
+    @Test void seedingIsIdempotent() {
+        seeder.run(null);
+        assertEquals(30,candidates.count());assertEquals(69,evaluations.count());assertEquals(90,assignments.count());
+    }
+    @Test void departmentsFiltersAndProfilesAreLinked() throws Exception {
+        for(String department:List.of("الموارد البشرية","تقنية المعلومات","المالية","التسويق","العمليات","خدمة العملاء")) {
+            var filtered=json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/candidates").param("department",department).header("Authorization","Bearer "+token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+            assertEquals(5,filtered.get("totalCount").asInt());
+            for(var item:filtered.get("items")) assertEquals(department,item.get("department").asText());
+        }
+        assertEquals(4,get("/api/v1/candidates?status=Pending").get("totalCount").asInt());
+        assertEquals(6,get("/api/v1/candidates?status=InProgress").get("totalCount").asInt());
+        assertEquals(20,get("/api/v1/candidates?status=Completed").get("totalCount").asInt());
+        assertEquals(5,get("/api/v1/candidates?sessionId="+session("DEMO-006")).get("totalCount").asInt());
+        var n=get("/api/v1/candidates?search=Noura");assertEquals(1,n.get("totalCount").asInt());
+        var profile=get("/api/v1/candidates/"+n.get("items").get(0).get("id").asText());
+        assertEquals("نورة",profile.get("fullNameAr").asText());assertEquals(3,profile.get("assignedEvaluators").size());
+        assertEquals(3,profile.get("evaluations").size());assertFalse(profile.get("notes").asText().isBlank());
+    }
+    @Test void visitorLoginRequiresNoPasswordAndCannotWrite() throws Exception {
+        var result=mvc.perform(post("/api/v1/auth/demo-login")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.isDemo").value(true)).andExpect(jsonPath("$.user.demoWriteEnabled").value(false))
+                .andReturn().getResponse().getContentAsString();
+        var t=json.readTree(result).get("accessToken").asText();
+        mvc.perform(post("/api/v1/candidates").header("Authorization","Bearer "+t).contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        assertFalse(result.contains(DEMO_PASSWORD));
     }
     @Test void everySubmittedTotalMatchesItsAnswers() {
         for(var evaluation:evaluations.findAll()) {
@@ -87,12 +116,20 @@ class DemoDataIntegrationTest extends DemoTestConfiguration {
     }
     @Test void dashboardAndReportsReflectTheFixture() throws Exception {
         var dashboard=get("/api/v1/manager/dashboard");
-        assertEquals(4,dashboard.get("totalSessions").asInt()); assertEquals(12,dashboard.get("totalCandidates").asInt());
-        assertEquals(2,dashboard.get("totalActiveSessions").asInt()); assertEquals(1,dashboard.get("employedCount").asInt());
-        assertEquals(3,get("/api/v1/reports/evaluators").get("items").size());
-        assertEquals(7,get("/api/v1/reports/results").get("items").size());
-        assertEquals(2,get("/api/v1/candidates?finalDecision=Recommended").get("totalCount").asInt());
-        assertEquals(12,get("/api/v1/reports/candidates").get("items").size());
+        assertEquals(6,dashboard.get("totalSessions").asInt()); assertEquals(30,dashboard.get("totalCandidates").asInt());
+        assertEquals(3,dashboard.get("totalActiveSessions").asInt()); assertEquals(1,dashboard.get("employedCount").asInt());
+        assertEquals(8,get("/api/v1/reports/evaluators").get("items").size());
+        assertEquals(13,get("/api/v1/reports/results").get("items").size());
+        assertEquals(6,get("/api/v1/candidates?finalDecision=Recommended").get("totalCount").asInt());
+        assertEquals(30,get("/api/v1/reports/candidates").get("items").size());
+    }
+    @Test void chartCountsMatchTheirCandidateFilters() throws Exception {
+        var dashboard=get("/api/v1/manager/dashboard");int sum=0;
+        for(var pair:Map.of("Recommended","recommendedCount","ConditionallyQualified","conditionalCount","NotQualified","notQualifiedCount","Employed","employedCount").entrySet()) {
+            int count=get("/api/v1/candidates?effectiveDecision="+pair.getKey()).get("totalCount").asInt();
+            assertEquals(count,dashboard.get(pair.getValue()).asInt());sum+=count;
+        }
+        sum+=get("/api/v1/candidates?unscored=true").get("totalCount").asInt();assertEquals(30,sum);
     }
     @Test void exportsContainTheFictionalRecords() throws Exception {
         var csv=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/reports/results?exportCsv=true")

@@ -129,6 +129,7 @@ export default function SessionComparisonPage() {
         })()}
       </div>
 
+      <p className="comparison-rule">{label('المتوسط مبني على التقييمات المرسلة فقط. لا تُحسب المسودات أو الدرجات الغائبة؛ النتائج الجزئية غير نهائية.', 'Averages use submitted evaluations only. Drafts and missing scores are excluded; partial results are provisional.')}</p>
       {/* ── KPI summary strip ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
         {[
@@ -296,6 +297,7 @@ export default function SessionComparisonPage() {
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
                       {r.nationalId}
                     </div>
+                    {r.submittedEvaluations < r.totalEvaluators && <small className="candidate-department">{label('لم يكتمل التقييم', 'Evaluation incomplete')}</small>}
                     {r.isOverridden && (
                       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary-dark)', background: 'rgba(0,93,69,0.08)', padding: '1px 6px', borderRadius: '4px', marginTop: '2px', display: 'inline-block' }}>
                         {label('قرار نهائي', 'Final Decision')}

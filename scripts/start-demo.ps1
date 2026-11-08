@@ -9,7 +9,7 @@ if (-not (Get-Command java -ErrorAction SilentlyContinue) -or -not $mavenCommand
     throw 'Install Java 21 and Maven 3.9+, add them to PATH, then open a new PowerShell window.'
 }
 $createdPassword = $false
-if (-not $env:DEMO_PASSWORD) {
+if (-not $env:DEMO_PASSWORD -and $Mode -eq 'Practice') {
     if ($NoPrompt) { throw 'Set DEMO_PASSWORD in this process before using -NoPrompt.' }
     $securePassword = Read-Host 'Choose a private demo password (12-72 characters)' -AsSecureString
     $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
@@ -17,12 +17,12 @@ if (-not $env:DEMO_PASSWORD) {
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer) }
     $createdPassword = $true
 }
-if ($env:DEMO_PASSWORD.Length -lt 12 -or $env:DEMO_PASSWORD.Length -gt 72) {
+if ($env:DEMO_PASSWORD -and ($env:DEMO_PASSWORD.Length -lt 12 -or $env:DEMO_PASSWORD.Length -gt 72)) {
     if ($createdPassword) { Remove-Item Env:DEMO_PASSWORD }
     throw 'The demo password must contain 12 to 72 characters.'
 }
 $profileName = if ($Mode -eq 'Practice') { 'demo-local' } else { 'demo' }
-Write-Host "Starting Qayem ($Mode) at http://localhost:5020. Sign in as demo using your private password."
+Write-Host "Starting Qayem ($Mode) at http://localhost:5020. Use the Try the demo button in ReadOnly mode, or your private demo password in Practice mode."
 Push-Location (Join-Path (Split-Path -Parent $PSScriptRoot) 'backend-java')
 try {
     & $mavenCommand.Source '-B' 'spring-boot:run' "-Dspring-boot.run.profiles=$profileName"

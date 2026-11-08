@@ -28,7 +28,7 @@ public class AuthController {
 
     @GetMapping("/demo-info")
     public Map<String, Object> demoInfo() {
-        return Map.of("enabled", demo, "localPractice", demo && demoWriteEnabled);
+        return Map.of("enabled", demo && !demoWriteEnabled, "localPractice", demo && demoWriteEnabled);
     }
 
 
@@ -62,6 +62,20 @@ public class AuthController {
         if (!user.isActive() || user.isDeleted())
             return ResponseEntity.status(403).body(Map.of("message", "Account is inactive or deleted."));
 
+        return issueSession(user);
+    }
+
+    /** Public visitor access exists only in the isolated, read-only demo. */
+    @PostMapping("/demo-login")
+    public ResponseEntity<?> demoLogin() {
+        if (!demo || demoWriteEnabled) return ResponseEntity.notFound().build();
+        var visitor=userRepo.findByUsername("demo").orElse(null);
+        if (visitor==null || !visitor.isActive() || visitor.isDeleted())
+            return ResponseEntity.status(503).body(Map.of("message","Demo is not ready. Try again shortly."));
+        return issueSession(visitor);
+    }
+
+    private ResponseEntity<?> issueSession(User user) {
         user.recordLogin();
         userRepo.save(user);
 

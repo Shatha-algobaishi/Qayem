@@ -59,7 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 userRoles.findByUserId(user.getId()).forEach(ur -> roles.add(ur.getRole().getName()));
 
                 if (demo && !List.of("GET", "HEAD", "OPTIONS").contains(request.getMethod())
-                        && !List.of("/api/v1/auth/revoke-token", "/api/v1/auth/refresh-token", "/api/v1/auth/login")
+                        && !List.of("/api/v1/auth/revoke-token", "/api/v1/auth/refresh-token", "/api/v1/auth/login", "/api/v1/auth/demo-login")
                         .contains(request.getRequestURI())) {
                     boolean localWorkflow = demoWriteEnabled && request.getRequestURI().matches(
                             "/api/v1/(sessions|candidates|evaluations|manager|notifications)(/.*)?");

@@ -1,5 +1,6 @@
+import BrandLoader from '../../../shared/components/ui/BrandLoader';
 import { csvCell } from '../../../shared/utils/safeOutput';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const DownIcon = () => (
@@ -21,6 +22,7 @@ interface CandidateRow {
   fullNameAr: string;
   fullNameEn: string;
   applicationType?: string;
+  department?: string;
   candidateStatus: string;
   aggregateScore?: number;
   systemDecision?: string;
@@ -40,23 +42,23 @@ const decisionLabel = (d?: string, isAr?: boolean): string => {
 };
 
 const statusAr: Record<string, string> = {
-  Pending:    'قيد المراجعة',
-  InProgress: 'مرشح للمقابلة',
-  Completed:  'تمت المقابلة',
+  Pending:    'بانتظار التقييم',
+  InProgress: 'لم يكتمل التقييم',
+  Completed:  'اكتمل التقييم',
 };
 const statusEn: Record<string, string> = {
-  Pending:    'Under Review',
-  InProgress: 'Shortlisted',
-  Completed:  'Interviewed',
+  Pending:    'Awaiting evaluation',
+  InProgress: 'Evaluation incomplete',
+  Completed:  'Evaluation complete',
 };
 const statusTooltipAr: Record<string, string> = {
-  Pending:    'تم تسجيل بيانات المتقدم، ولم يتم تحديد مقابلة له بعد.',
-  InProgress: 'تم ترشيحه وإسناد مقابلة له',
+  Pending:    'لم يبدأ أي مقيّم تقييم هذا المرشح بعد.',
+  InProgress: 'توجد مسودة أو تقييمات مرسلة مع بقاء تقييمات غير مكتملة.',
   Completed:  'انتهت المقابلة وتم تقييمه',
 };
 const statusTooltipEn: Record<string, string> = {
-  Pending:    'Applicant registered, no interview scheduled yet.',
-  InProgress: 'Shortlisted and assigned to an interview session.',
+  Pending:    'No evaluator has started an evaluation yet.',
+  InProgress: 'A draft or partial submission exists; the panel is not complete.',
   Completed:  'Interview completed and evaluated.',
 };
 const statusColors: Record<string, { bg: string; color: string }> = {
@@ -67,12 +69,12 @@ const statusColors: Record<string, { bg: string; color: string }> = {
 
 function exportToCsv(rows: CandidateRow[], isAr: boolean) {
   const headers = isAr
-    ? ['رقم الهوية', 'الاسم (عربي)', 'الاسم (إنجليزي)', 'نوع الطلب', 'الحالة', 'متوسط الدرجات', 'قرار النظام', 'القرار النهائي', 'سيرة ذاتية', 'تاريخ التسجيل']
-    : ['National ID', 'Name (Arabic)', 'Name (English)', 'Application Type', 'Status', 'Avg Score', 'System Decision', 'Final Decision', 'Has CV', 'Registered At'];
+    ? ['رقم الهوية', 'الاسم (عربي)', 'الاسم (إنجليزي)', 'القسم', 'نوع الطلب', 'الحالة', 'متوسط الدرجات', 'قرار النظام', 'القرار النهائي', 'سيرة ذاتية', 'تاريخ التسجيل']
+    : ['National ID', 'Name (Arabic)', 'Name (English)', 'Department', 'Application Type', 'Status', 'Avg Score', 'System Decision', 'Final Decision', 'Has CV', 'Registered At'];
   const csvRows = [
     headers.map(csvCell).join(','),
     ...rows.map(c => [
-      c.nationalId, c.fullNameAr, c.fullNameEn,
+      c.nationalId, c.fullNameAr, c.fullNameEn, c.department ?? '',
       c.applicationType ?? '',
       c.candidateStatus,
       c.aggregateScore != null ? Number(c.aggregateScore).toFixed(1) : '',
@@ -93,6 +95,7 @@ async function exportToXlsx(rows: CandidateRow[], isAr: boolean) {
     [isAr ? 'رقم الهوية' : 'National ID']: c.nationalId,
     [isAr ? 'الاسم (عربي)' : 'Name (Arabic)']: c.fullNameAr,
     [isAr ? 'الاسم (إنجليزي)' : 'Name (English)']: c.fullNameEn,
+    [isAr ? 'القسم' : 'Department']: c.department ?? '',
     [isAr ? 'نوع الطلب' : 'Application Type']: c.applicationType ?? '',
     [isAr ? 'الحالة' : 'Status']: isAr ? (statusAr[c.candidateStatus] ?? c.candidateStatus) : c.candidateStatus,
     [isAr ? 'متوسط الدرجات' : 'Avg Score']: c.aggregateScore != null ? Number(c.aggregateScore).toFixed(1) : '',
@@ -117,7 +120,11 @@ export default function CandidatesListPage() {
   const isAr           = locale === 'ar';
   const label          = (ar: string, en: string) => isAr ? ar : en;
 
-  const sessionIdFilter = params.get('sessionId') ?? '';
+  const [sessionIdFilter, setSessionIdFilter] = useState(params.get('sessionId') ?? '');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [effectiveDecisionFilter, setEffectiveDecisionFilter] = useState(params.get('effectiveDecision') ?? '');
+  const [sessions, setSessions] = useState<any[]>([]);
+  useEffect(() => { api.sessions.list({pageSize:200}).then(r => setSessions(r.data.items ?? [])).catch(() => setSessions([])); }, []);
 
   const [data, setData]             = useState<PagedResult<CandidateRow> | null>(null);
   const [search, setSearch]         = useState('');
@@ -145,6 +152,8 @@ export default function CandidatesListPage() {
 
   const buildParams = (overridePage = page) => ({
     sessionId:       sessionIdFilter || undefined,
+    department:      departmentFilter || undefined,
+    effectiveDecision: effectiveDecisionFilter || undefined,
     hasSession:      sessionIdFilter ? undefined : undefined,
     search:          search || undefined,
     status:          statusFilter || undefined,
@@ -158,11 +167,16 @@ export default function CandidatesListPage() {
   });
 
   const fetchAllRows = async () => {
-    const res = await api.candidates.list({
-      ...buildParams(1),
-      pageSize: 9999,
-    });
-    return res.data.items ?? [];
+    const rows: CandidateRow[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    do {
+      const res = await api.candidates.list({...buildParams(currentPage), pageSize: 200});
+      rows.push(...(res.data.items ?? []));
+      totalPages = res.data.totalPages;
+      currentPage++;
+    } while (currentPage <= totalPages);
+    return rows;
   };
 
   const handleExport = async () => {
@@ -175,17 +189,19 @@ export default function CandidatesListPage() {
     try { exportToXlsx(await fetchAllRows(), isAr); } finally { setExportingXlsx(false); }
   };
 
+  const latestRequest = useRef(0);
   const load = (p = page) => {
+    const request = ++latestRequest.current;
     setIsLoading(true);
     api.candidates.list(buildParams(p))
-      .then(res => setData(res.data))
-      .finally(() => setIsLoading(false));
+      .then(res => { if (request === latestRequest.current) setData(res.data); })
+      .finally(() => { if (request === latestRequest.current) setIsLoading(false); });
   };
 
   useEffect(() => {
     setPage(1);
     load(1);
-  }, [search, statusFilter, sysDecisionFilter, finalDecisionFilter, appTypeFilter, minScore, maxScore, sessionIdFilter]);
+  }, [search, statusFilter, sysDecisionFilter, finalDecisionFilter, appTypeFilter, minScore, maxScore, sessionIdFilter, departmentFilter, effectiveDecisionFilter]);
 
   useEffect(() => { load(); }, [page]);
 
@@ -228,7 +244,7 @@ export default function CandidatesListPage() {
   ];
 
   return (
-    <div>
+    <div className="candidates-page">
       {/* ── Page header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
         <div>
@@ -259,6 +275,7 @@ export default function CandidatesListPage() {
       </div>
 
 
+      {effectiveDecisionFilter && <p className="comparison-rule">{label('تصفية قرار لوحة البيانات:', 'Dashboard decision filter:')} {decisionLabel(effectiveDecisionFilter,isAr)}</p>}
       {/* ── Filters ── */}
       <div style={{ marginBottom: 'var(--space-5)' }}>
         {/* Primary row: search + status + advanced toggle */}
@@ -270,11 +287,19 @@ export default function CandidatesListPage() {
             placeholder={label('البحث بالاسم أو رقم الهوية...', 'Search by name or national ID...')}
             style={{ ...inputStyle, flex: '1', minWidth: '180px' }}
           />
-          <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} style={{ ...inputStyle, width: '160px' }}>
+          <select aria-label={label("الحالة", "Status")} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} style={{ ...inputStyle, width: '160px' }}>
             <option value="">{label('المتقدمون', 'All Applicants')}</option>
-            <option value="Pending">{label('قيد المراجعة', 'Under Review')}</option>
-            <option value="InProgress">{label('مرشح للمقابلة', 'Shortlisted')}</option>
-            <option value="Completed">{label('تمت المقابلة', 'Interviewed')}</option>
+            <option value="Pending">{label('بانتظار التقييم', 'Awaiting evaluation')}</option>
+            <option value="InProgress">{label('لم يكتمل التقييم', 'Evaluation incomplete')}</option>
+            <option value="Completed">{label('اكتمل التقييم', 'Evaluation complete')}</option>
+          </select>
+          <select aria-label={label('القسم', 'Department')} value={departmentFilter} onChange={e=>setDepartmentFilter(e.target.value)} style={{...inputStyle,width:'180px'}}>
+            <option value="">{label('جميع الأقسام', 'All departments')}</option>
+            {Array.from(new Set(sessions.map(s=>s.department))).filter(Boolean).map(d=><option key={d} value={d}>{d}</option>)}
+          </select>
+          <select aria-label={label('الجلسة', 'Session')} value={sessionIdFilter} onChange={e=>setSessionIdFilter(e.target.value)} style={{...inputStyle,width:'190px'}}>
+            <option value="">{label('جميع الجلسات', 'All sessions')}</option>
+            {sessions.map(s=><option key={s.id} value={s.id}>{s.sessionCode} — {isAr?s.titleAr:s.titleEn}</option>)}
           </select>
           <button
             onClick={() => setShowAdvanced(p => !p)}
@@ -299,9 +324,9 @@ export default function CandidatesListPage() {
               </span>
             )}
           </button>
-          {(search || statusFilter || sysDecisionFilter || finalDecisionFilter || appTypeFilter || minScore || maxScore) && (
+          {(effectiveDecisionFilter || departmentFilter || sessionIdFilter || search || statusFilter || sysDecisionFilter || finalDecisionFilter || appTypeFilter || minScore || maxScore) && (
             <button
-              onClick={() => { setSearch(''); setStatusFilter(''); setSysDecisionFilter(''); setFinalDecisionFilter(''); setAppTypeFilter(''); setMinScore(''); setMaxScore(''); setPage(1); }}
+              onClick={() => { setSearch(''); setEffectiveDecisionFilter(''); setDepartmentFilter(''); setSessionIdFilter(''); setStatusFilter(''); setSysDecisionFilter(''); setFinalDecisionFilter(''); setAppTypeFilter(''); setMinScore(''); setMaxScore(''); setPage(1); }}
               style={clearFilterBtnStyle}
             >
               {label('مسح الكل', 'Clear All')}
@@ -381,13 +406,13 @@ export default function CandidatesListPage() {
       </div>
 
       {/* ── Table ── */}
-      <div style={cardStyle}>
+      <div style={{...cardStyle,overflowX:"auto"}}>
         {isLoading ? (
           <div style={{ padding: 'var(--space-16)', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            {label('جارٍ التحميل...', 'Loading...')}
+            <BrandLoader />
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <table style={{ width: '100%', minWidth: 880, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--color-neutral-50)', borderBottom: '1px solid var(--color-border)' }}>
                 {[
@@ -413,7 +438,7 @@ export default function CandidatesListPage() {
                     onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--color-bg-white)' : 'var(--color-neutral-50)')}
                   >
                     <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}>{c.nationalId}</td>
-                    <td style={tdStyle}>{isAr ? c.fullNameAr : c.fullNameEn}</td>
+                    <td style={tdStyle}>{isAr ? c.fullNameAr : c.fullNameEn}<small className="candidate-department">{c.department}</small></td>
                     <td style={tdStyle}>
                       <span
                         title={isAr ? (statusTooltipAr[c.candidateStatus] ?? '') : (statusTooltipEn[c.candidateStatus] ?? c.candidateStatus)}

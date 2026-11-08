@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { api } from '../../core/api/apiClient';
+import { api, apiClient } from '../../core/api/apiClient';
 import type { AuthState, UserDto } from '../../shared/types';
 
 function readUser(): UserDto | null {
@@ -19,9 +19,9 @@ const initialState: AuthState = {
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { username: string; password: string }, { rejectWithValue }) => {
+  async (credentials: { username: string; password: string } | undefined, { rejectWithValue }) => {
     try {
-      const { data } = await api.auth.login(credentials);
+      const { data } = credentials ? await api.auth.login(credentials) : await apiClient.post('/auth/demo-login');
       return data;
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string; message?: string } } };

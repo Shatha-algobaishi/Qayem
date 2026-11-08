@@ -1,3 +1,4 @@
+import BrandLoader from '../../../shared/components/ui/BrandLoader';
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../app/store';
@@ -128,7 +129,7 @@ export default function CandidateDetailPage() {
 
   if (isLoading) return (
     <div style={{ padding: 'var(--space-16)', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-      {label('جارٍ التحميل...', 'Loading...')}
+      <BrandLoader />
     </div>
   );
   if (!candidate) return (
@@ -147,7 +148,7 @@ export default function CandidateDetailPage() {
     InProgress: 'var(--color-warning)',
     Completed: 'var(--color-recommended)',
   };
-  const statusArMap: Record<string, string> = { Pending: 'قيد المراجعة', InProgress: 'مرشح للمقابلة', Completed: 'تمت المقابلة' };
+  const statusArMap: Record<string, string> = { Pending: 'بانتظار التقييم', InProgress: 'لم يكتمل التقييم', Completed: 'اكتمل التقييم' };
   const evalStatusAr: Record<string, string> = { Draft: 'مسودة', Submitted: 'مقدَّم', ReviewedByManager: 'مراجَع' };
 
   const canEditCv = effectiveRole === 'Admin' || effectiveRole === 'DataEntry';
@@ -159,7 +160,7 @@ export default function CandidateDetailPage() {
     : candidate.fullNameAr;
 
   return (
-    <div>
+    <div className="candidate-profile">
       <button onClick={() => navigate(-1)} style={ghostBtnStyle}>
         {label('← رجوع', '← Back')}
       </button>
@@ -210,7 +211,7 @@ export default function CandidateDetailPage() {
             {[
               [label('الاسم الأول', 'First Name'), candidate.firstNameAr || '—'],
               [label('الاسم الثاني', 'Second Name'), candidate.secondNameAr || '—'],
-              [label('الاسم الأخير', 'Last Name'), candidate.lastNameAr || candidate.fullNameAr],
+              [label('الاسم الأخير', 'Last Name'), candidate.lastNameAr || '—'],
               [label('الاسم (إنجليزي)', 'Name (English)'), candidate.fullNameEn || '—'],
               [label('البريد الإلكتروني', 'Email'), candidate.email || '—'],
               [label('الجوال', 'Phone'), candidate.phoneNumber || '—'],
@@ -230,12 +231,15 @@ export default function CandidateDetailPage() {
           <div style={cardBodyStyle}>
             {[
               [label('المؤهل', 'Qualification'), candidate.qualification || '—'],
+              [label('القسم', 'Department'), candidate.department || '—'],
+              [label('المسمى الوظيفي', 'Position'), (isAr?candidate.jobPositionAr:candidate.jobPositionEn) || '—'],
               [label('التخصص', 'Specialization'), (isAr ? candidate.specializationAr : candidate.specializationEn) || '—'],
               [label('الجامعة', 'University'), candidate.university || '—'],
               [label('المعدل', 'GPA'), candidate.gpa != null ? `${candidate.gpa} (${candidate.gpaSystem})` : '—'],
               [label('سنوات الخبرة', 'Experience'), candidate.yearsOfExperience != null ? `${candidate.yearsOfExperience} ${label('سنة', 'yr')}` : '—'],
               [label('جهة العمل', 'Employer'), candidate.currentEmployer || '—'],
               [label('المسمى الحالي', 'Current Title'), candidate.currentTitle || '—'],
+              [label('المهارات والملاحظات', 'Skills and notes'), candidate.notes || '—'],
             ].map(([k, v], i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--space-2) 0', borderBottom: '1px solid var(--color-border)', fontSize: 'var(--text-sm)' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>{k}</span>
@@ -463,7 +467,7 @@ export default function CandidateDetailPage() {
       {/* ── Interview Schedule ── */}
       <div style={{ ...cardStyle, marginBottom: 'var(--space-5)' }}>
         <div style={{ ...cardHeaderStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{label('موعد المقابلة', 'Interview Schedule')}</span>
+          <span>{label('موعد المقابلة', 'Interview Schedule')} {candidate.sessionId && <button className="text-action" onClick={()=>navigate('/sessions/'+candidate.sessionId)}>{label('عرض جلسة المقابلة', 'View interview session')}</button>}</span>
           {canSchedule && (
             <button onClick={() => setScheduleOpen(o => !o)} style={{ ...ghostBtnStyle, fontSize: 'var(--text-xs)' }}>
               {candidate.interviewScheduledAt ? label('تعديل الموعد', 'Edit Schedule') : label('تحديد موعد', 'Set Schedule')}
@@ -609,7 +613,7 @@ export default function CandidateDetailPage() {
             : (parsed?.averageScore ?? '—');
         return (
           <div style={{ ...cardStyle, marginBottom: 'var(--space-5)' }}>
-            <div style={cardHeaderStyle}>{label('ملخص الذكاء الاصطناعي', 'AI Summary')}</div>
+            <div style={cardHeaderStyle}>{candidate.aiSummary ? label('ملخص الذكاء الاصطناعي', 'AI Summary') : label('ملخص التقييمات', 'Evaluation summary')}</div>
             <div style={{ padding: 'var(--space-5) var(--space-6)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {/* Stats row — always visible when there are evaluations */}

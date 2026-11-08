@@ -1,3 +1,4 @@
+import BrandLoader from '../../../shared/components/ui/BrandLoader';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
@@ -102,7 +103,7 @@ export default function ManagerDashboardPage() {
   if (isLoading || !dashboard) {
     return (
       <div style={{ padding: 'var(--space-16)', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-        {label('جارٍ التحميل...', 'Loading dashboard...')}
+        <BrandLoader />
       </div>
     );
   }
@@ -138,12 +139,11 @@ export default function ManagerDashboardPage() {
   const handleCandSlice = async (seg: DonutSegment, idx: number) => {
     if (activeCand?.seg.key === seg.key) { setActiveCand(null); setCandList([]); return; }
     setActiveCand({ idx, seg });
-    if (seg.key === 'pending') { setCandList([]); return; }
     setCandLoading(true);
     try {
       const params: Record<string, string> = { pageSize: '6', page: '1' };
-      if (seg.key === 'Employed') params.finalDecision = 'Employed';
-      else params.systemDecision = seg.key;
+      if (seg.key === 'pending') params.unscored = 'true';
+      else params.effectiveDecision = seg.key;
       const res = await api.candidates.list(params);
       const data = res.data;
       setCandList(Array.isArray(data) ? data : (data?.items ?? []));
@@ -152,19 +152,19 @@ export default function ManagerDashboardPage() {
   };
 
   return (
-    <div>
+    <div className="manager-dashboard">
       {/* Header */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
         <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-light)' }}>
           {label('لوحة تحكم المدير', 'Manager Dashboard')}
         </h2>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-          {label('نظرة عامة على حالة التقييمات', 'Overview of evaluation status')}
+          {label('الأعداد تجمع القرار النهائي إن وجد، وإلا التوصية المبنية على التقييمات المرسلة. النتائج الجزئية غير نهائية.', 'Counts use the final decision where available, otherwise the submitted-score recommendation. Partial results are provisional.')}
         </p>
       </div>
 
       {/* ── Two donut charts ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+      <div className="dashboard-charts" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
 
         {/* Sessions chart */}
         <div style={{
@@ -201,7 +201,7 @@ export default function ManagerDashboardPage() {
                   <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
                     {isAr ? seg.labelAr : seg.labelEn}
                   </span>
-                  <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-medium)', color: seg.color }}>
+                  <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-medium)', color: 'var(--color-text-primary)' }}>
                     {seg.value}
                   </span>
                 </div>
@@ -245,7 +245,7 @@ export default function ManagerDashboardPage() {
                   <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
                     {isAr ? seg.labelAr : seg.labelEn}
                   </span>
-                  <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-medium)', color: seg.color }}>
+                  <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-medium)', color: 'var(--color-text-primary)' }}>
                     {seg.value}
                   </span>
                 </div>
@@ -335,7 +335,7 @@ export default function ManagerDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               {activeCand.seg.key !== 'pending' && (
                 <button
-                  onClick={() => navigate('/candidates')}
+                  onClick={() => navigate('/candidates?effectiveDecision='+activeCand.seg.key)}
                   style={{
                     padding: '4px 14px',
                     background: activeCand.seg.color, color: '#fff',
@@ -356,7 +356,7 @@ export default function ManagerDashboardPage() {
             </p>
           ) : candLoading ? (
             <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-              {label('جارٍ التحميل...', 'Loading...')}
+              <BrandLoader />
             </div>
           ) : candList.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>

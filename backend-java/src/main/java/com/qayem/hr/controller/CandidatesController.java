@@ -91,9 +91,12 @@ public class CandidatesController {
     public ResponseEntity<?> getCandidates(
             @RequestParam(required = false) UUID sessionId,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String department,
             @RequestParam(required = false) String applicationType,
             @RequestParam(required = false) Boolean hasSession,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String effectiveDecision,
+            @RequestParam(required = false) Boolean unscored,
             @RequestParam(required = false) String systemDecision,
             @RequestParam(required = false) String finalDecision,
             @RequestParam(required = false) BigDecimal minScore,
@@ -116,6 +119,8 @@ public class CandidatesController {
                 predicates.add(cb.or(root.get("id").in(direct), root.get("sessionId").in(viaSession)));
             }
             if (sessionId != null) predicates.add(cb.equal(root.get("sessionId"), sessionId));
+            if (department != null && !department.isBlank())
+                predicates.add(cb.equal(root.join("session", jakarta.persistence.criteria.JoinType.LEFT).get("department"), department));
             if (hasSession != null)
                 predicates.add(hasSession ? cb.isNotNull(root.get("sessionId")) : cb.isNull(root.get("sessionId")));
             if (search != null && !search.isBlank()) {
@@ -130,6 +135,11 @@ public class CandidatesController {
                 predicates.add(cb.equal(root.get("applicationType"), applicationType));
             if (status != null) {
                 try { predicates.add(cb.equal(root.get("candidateStatus"), CandidateStatus.valueOf(status))); }
+                catch (IllegalArgumentException ignored) {}
+            }
+            if (Boolean.TRUE.equals(unscored)) predicates.add(cb.isNull(root.get("aggregateScore")));
+            if (effectiveDecision != null) {
+                try { predicates.add(cb.equal(cb.coalesce(root.get("finalDecision"),root.get("systemDecision")), EvaluationDecision.valueOf(effectiveDecision))); }
                 catch (IllegalArgumentException ignored) {}
             }
             if (systemDecision != null) {
@@ -178,6 +188,7 @@ public class CandidatesController {
             m.put("finalDecision", c.getFinalDecision() != null ? c.getFinalDecision().toString() : null);
             m.put("isOverridden", c.getOverriddenBy() != null); m.put("hasCv", c.getCvFilePath() != null);
             m.put("registeredAt", c.getRegisteredAt());
+            m.put("department", c.getSession()!=null?c.getSession().getDepartment():null);
             m.put("sessionCode", c.getSession() != null ? c.getSession().getSessionCode() : null);
             m.put("sessionTitleAr", c.getSession() != null ? c.getSession().getTitleAr() : null);
             return m;
@@ -197,6 +208,9 @@ public class CandidatesController {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", c.getId()); result.put("sessionId", c.getSessionId());
+        result.put("department", c.getSession()!=null?c.getSession().getDepartment():null);
+        result.put("jobPositionAr", c.getSession()!=null?c.getSession().getJobPositionAr():null);
+        result.put("jobPositionEn", c.getSession()!=null?c.getSession().getJobPositionEn():null);
         result.put("nationalId", c.getNationalId()); result.put("fullNameAr", c.getFullNameAr());
         result.put("fullNameEn", c.getFullNameEn()); result.put("firstNameAr", c.getFirstNameAr());
         result.put("secondNameAr", c.getSecondNameAr()); result.put("lastNameAr", c.getLastNameAr());
