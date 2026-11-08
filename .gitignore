@@ -1,0 +1,50 @@
+# ── .NET ──────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+*.swp
+*.DS_Store
+TestResults/
+*.trx
+*.coverage
+publish/
+
+# ── Secrets (never commit) ────────────────────────────────────
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.p12
+secrets.json
+
+# ── Node / Vite / React ───────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── Environment files ─────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Uploads (runtime data) ────────────────────────────────────
+backend/uploads/
+**/uploads/
+backend-java/target/
+output/
+.playwright-cli/
+qayem-deploy/
+qayem-deploy.zip
+.env.*
+
+# ── OS / editor ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+
+# Runtime logs may contain private session details.
+*.log
